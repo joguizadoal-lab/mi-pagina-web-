@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trivia: ETL en la nube</title>
+<style>
+:root{--bg:#EEF7FD;--card:#FFFFFF;--ink:#0F2F55;--mut:#4B6A8A;--pri:#0B3A75;--acc:#1F6FB5;--soft:#DCEFFB;--line:#B7DDF2;--ok:#1B7F4B;--okbg:#DDF4E6;--bad:#B3261E;--badbg:#FBE3E1;--on:#FFFFFF;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0A1B33;--card:#102A4D;--ink:#EAF5FD;--mut:#9DBBD6;--pri:#8FD6F5;--acc:#5BB4E8;--soft:#173A66;--line:#2A5588;--ok:#7BE0A6;--okbg:#12402B;--bad:#FF9C95;--badbg:#4A1E1B;--on:#06223F}}
+:root[data-theme="dark"]{--bg:#0A1B33;--card:#102A4D;--ink:#EAF5FD;--mut:#9DBBD6;--pri:#8FD6F5;--acc:#5BB4E8;--soft:#173A66;--line:#2A5588;--ok:#7BE0A6;--okbg:#12402B;--bad:#FF9C95;--badbg:#4A1E1B;--on:#06223F}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-height:100vh;line-height:1.45}
+.wrap{max-width:760px;margin:0 auto;padding:18px 16px 40px}
+.hero{background:linear-gradient(135deg,#0B3A75,#1F6FB5);color:#fff;border-radius:22px;padding:22px 20px;text-align:center}
+.hero small{display:inline-block;background:rgba(255,255,255,.18);padding:4px 14px;border-radius:999px;font-weight:600;letter-spacing:.04em}
+.hero h1{margin:10px 0 4px;font-size:clamp(28px,7vw,42px);line-height:1.1}
+.hero p{margin:0;opacity:.9}
+.card{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:18px;margin-top:16px}
+h2{margin:0 0 10px;font-size:20px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.mode{flex:1 1 220px;text-align:left;background:var(--soft);border:2px solid var(--line);border-radius:16px;padding:14px;color:var(--ink);font:inherit;cursor:pointer}
+.mode b{display:block;font-size:18px}
+.mode[aria-pressed="true"]{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc) inset}
+label{display:block;font-weight:600;margin:12px 0 4px}
+input{width:100%;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+.btn{display:inline-block;background:var(--pri);color:var(--on);border:0;border-radius:14px;padding:14px 22px;font:inherit;font-weight:700;font-size:17px;cursor:pointer;min-height:48px}
+.btn:hover{filter:brightness(1.1)}
+.btn.ghost{background:var(--soft);color:var(--ink);border:2px solid var(--line)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-weight:700}
+.bar{height:12px;background:var(--soft);border-radius:999px;overflow:hidden;margin-top:10px;border:1px solid var(--line)}
+.bar>i{display:block;height:100%;background:var(--acc);width:0;transition:width .1s linear}
+.bar.time>i{background:#E8A21A}
+.bar.time.low>i{background:var(--bad)}
+.score{display:flex;gap:8px;flex-wrap:wrap}
+.pill{background:var(--soft);border:2px solid var(--line);border-radius:999px;padding:4px 14px}
+.pill.on{border-color:var(--acc);background:var(--pri);color:var(--on)}
+.q{font-size:clamp(20px,4.6vw,26px);font-weight:700;margin:14px 0}
+.opts{display:grid;gap:10px}
+.opt{display:flex;gap:12px;align-items:center;text-align:left;background:var(--soft);color:var(--ink);border:2px solid var(--line);border-radius:16px;padding:14px;font:inherit;font-size:17px;cursor:pointer;min-height:56px}
+.opt:hover:not(:disabled){border-color:var(--acc);transform:translateY(-1px)}
+.opt:disabled{cursor:default}
+.opt .k{flex:0 0 34px;height:34px;border-radius:50%;background:var(--pri);color:var(--on);display:grid;place-items:center;font-weight:800}
+.opt.ok{background:var(--okbg);border-color:var(--ok)}
+.opt.bad{background:var(--badbg);border-color:var(--bad)}
+.fb{margin-top:14px;padding:14px;border-radius:14px;border:2px solid var(--line);background:var(--soft)}
+.fb.ok{background:var(--okbg);border-color:var(--ok)}
+.fb.bad{background:var(--badbg);border-color:var(--bad)}
+.fb h3{margin:0 0 4px}
+.big{font-size:clamp(40px,12vw,72px);font-weight:800;text-align:center;color:var(--pri);margin:6px 0}
+.center{text-align:center}
+.mut{color:var(--mut)}
+.pop{animation:pop .35s ease}
+@keyframes pop{0%{transform:scale(.9);opacity:.4}100%{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.pop{animation:none}.opt:hover:not(:disabled){transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <small>LABORATORIO N°8 · INTELIGENCIA DE NEGOCIOS</small>
+    <h1>Trivia: ETL en la nube</h1>
+    <p>Joel Fabricio Guizado Alcantara · UCV 2026</p>
+  </header>
+  <main id="app"></main>
+</div>
+<script>
+var Q=[
+{q:"¿Qué significan las siglas ETL?",o:["Evaluate, Test, Launch","Extract, Transform, Load","Export, Translate, Link","Extract, Transfer, Locate"],c:1,e:"ETL son las siglas de Extract, Transform, Load: extraer, transformar y cargar los datos."},
+{q:"¿En qué fase del ETL se limpian, estandarizan y validan los datos?",o:["Extracción","Carga","Transformación","Visualización"],c:2,e:"En la transformación se eliminan duplicados y nulos, se unifican formatos, se validan reglas de calidad y se calculan métricas."},
+{q:"¿Para qué sirve el área de staging?",o:["Guardar los datos temporalmente para no afectar los sistemas de origen","Mostrar dashboards a los usuarios","Reemplazar al data warehouse","Eliminar los datos antiguos"],c:0,e:"Es un área intermedia donde aterrizan los datos extraídos antes de transformarlos, así los sistemas operacionales no se sobrecargan."},
+{q:"¿Qué caracteriza a una carga incremental?",o:["Borra todo el almacén y lo vuelve a llenar","Solo se carga una vez al año","Solo carga los datos nuevos o modificados","Solo carga datos de una fuente"],c:2,e:"Procesa únicamente los cambios desde la última ejecución, lo que ahorra tiempo y recursos."},
+{q:"¿Cuáles son destinos típicos de un proceso ETL?",o:["Una hoja de cálculo personal","Un data warehouse o un data lake","Un correo electrónico","Un sistema de facturación"],c:1,e:"El ETL deja los datos en un destino analítico, desde donde se consultan con herramientas de BI."},
+{q:"¿Cómo se automatiza un pipeline ETL en la nube?",o:["Ejecutándolo a mano cada vez","Con disparadores por eventos u horarios, monitoreo y reintentos","Copiando los archivos en un USB","Apagando los servidores por la noche"],c:1,e:"Los pasos se activan por eventos u horarios, y el monitoreo con reintentos reduce la intervención manual y los errores."},
+{q:"¿Qué ventaja ofrece la escalabilidad del ETL en la nube?",o:["El cómputo crece según el volumen de datos y se paga por uso","Requiere comprar más servidores propios","Solo funciona con pocos datos","Elimina la necesidad de transformar los datos"],c:0,e:"Los recursos son elásticos: se asignan según la carga y se paga por lo que se usa, sin infraestructura propia."},
+{q:"¿Qué es Azure Data Factory?",o:["Un editor de imágenes de Microsoft","Una base de datos de Amazon","Un sistema operativo en la nube","El servicio de integración de datos de Microsoft para orquestar pipelines"],c:3,e:"Permite crear y orquestar pipelines de forma visual, con transformaciones de bajo código y muchos conectores."},
+{q:"¿Cuál de estas características corresponde a AWS Glue?",o:["Es un servicio ETL administrado y serverless de Amazon","Es una hoja de cálculo de Microsoft","Solo funciona en servidores locales","Es una herramienta de diseño gráfico"],c:0,e:"Escala los recursos automáticamente, se programa con Python o Spark y se integra con S3 y Redshift."},
+{q:"¿En qué se diferencia el ELT del ETL?",o:["En el ELT no se extraen los datos","Primero se cargan los datos y luego se transforman en el destino","En el ELT no hay fase de carga","Son exactamente lo mismo"],c:1,e:"En el ELT los datos se cargan primero y se transforman dentro del destino, aprovechando su capacidad de cómputo."}
+];
+var SECS=20, app=document.getElementById("app"), S=null, mode="solo", tm=null;
+function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+
+function home(){
+  clearInterval(tm);
+  app.innerHTML='<section class="card pop"><h2>Elige cómo jugar</h2>'+
+  '<div class="row"><button class="mode" data-mode="solo" aria-pressed="'+(mode==="solo")+'"><b>Individual</b>Responde solo y busca tu mejor puntaje.</button>'+
+  '<button class="mode" data-mode="teams" aria-pressed="'+(mode==="teams")+'"><b>Por equipos</b>Dos equipos se turnan en una misma pantalla.</button></div>'+
+  '<div id="names"></div>'+
+  '<p class="mut">10 preguntas · 20 segundos cada una · cuanto más rápido respondas, más puntos ganas.</p>'+
+  '<button class="btn" id="go">Empezar la trivia</button></section>';
+  names();
+}
+function names(){
+  var n=document.getElementById("names");
+  n.innerHTML = mode==="solo"
+   ? '<label for="n1">Tu nombre</label><input id="n1" maxlength="24" placeholder="Jugador">'
+   : '<div class="row"><div style="flex:1 1 200px"><label for="n1">Equipo 1</label><input id="n1" maxlength="24" placeholder="Equipo 1"></div><div style="flex:1 1 200px"><label for="n2">Equipo 2</label><input id="n2" maxlength="24" placeholder="Equipo 2"></div></div>';
+}
+function start(){
+  var a=(document.getElementById("n1").value||"").trim(), b=((document.getElementById("n2")||{}).value||"").trim();
+  S={mode:mode,names:mode==="solo"?[a||"Jugador"]:[a||"Equipo 1",b||"Equipo 2"],sc:[0,0],ok:[0,0],i:0,order:shuffle(Q.map(function(_,i){return i}))};
+  S.names=S.names.map(esc);
+  show();
+}
+function who(){return S.mode==="solo"?0:S.i%2}
+function show(){
+  var q=Q[S.order[S.i]], opts=shuffle(q.o.map(function(t,i){return {t:t,r:i===q.c}}));
+  S.cur=opts; S.done=false; S.left=SECS;
+  var sc=S.names.map(function(n,k){return '<span class="pill'+(S.mode==="teams"&&who()===k?' on':'')+'">'+n+': '+S.sc[k]+'</span>'}).join("");
+  app.innerHTML='<section class="card pop"><div class="top"><span>Pregunta '+(S.i+1)+' de '+Q.length+'</span><span class="score">'+sc+'</span></div>'+
+  '<div class="bar" aria-hidden="true"><i style="width:'+(S.i/Q.length*100)+'%"></i></div>'+
+  (S.mode==="teams"?'<p class="center" style="margin:12px 0 0"><b>Turno de '+S.names[who()]+'</b></p>':'')+
+  '<div class="top" style="margin-top:12px"><span class="mut">Tiempo</span><span id="sec">'+SECS+' s</span></div>'+
+  '<div class="bar time" id="tb"><i id="tbi" style="width:100%"></i></div>'+
+  '<p class="q">'+esc(q.q)+'</p><div class="opts">'+
+  opts.map(function(o,k){return '<button class="opt" data-k="'+k+'"><span class="k">'+"ABCD"[k]+'</span><span>'+esc(o.t)+'</span></button>'}).join("")+
+  '</div><div id="fb" aria-live="polite"></div></section>';
+  S.t0=Date.now(); clearInterval(tm);
+  tm=setInterval(function(){
+    var left=Math.max(0,SECS-(Date.now()-S.t0)/1000); S.left=left;
+    var tb=document.getElementById("tb"); if(!tb)return;
+    document.getElementById("tbi").style.width=(left/SECS*100)+"%";
+    document.getElementById("sec").textContent=Math.ceil(left)+" s";
+    tb.classList.toggle("low",left<6);
+    if(left<=0) answer(-1);
+  },100);
+}
+function answer(k){
+  if(S.done)return; S.done=true; clearInterval(tm);
+  var q=Q[S.order[S.i]], w=who(), right=k>=0&&S.cur[k].r, gain=0;
+  if(right){gain=100+Math.round(S.left*2.5); S.sc[w]+=gain; S.ok[w]++;}
+  document.querySelectorAll(".opt").forEach(function(b,j){b.disabled=true; if(S.cur[j].r)b.classList.add("ok"); else if(j===k)b.classList.add("bad");});
+  var last=S.i===Q.length-1;
+  document.getElementById("fb").innerHTML='<div class="fb pop '+(right?'ok':'bad')+'"><h3>'+(right?'¡Correcto! +'+gain+' puntos':(k<0?'Se acabó el tiempo':'Casi, esa no era'))+'</h3><p style="margin:0 0 12px">'+esc(q.e)+'</p><button class="btn" id="next">'+(last?'Ver resultados':'Siguiente pregunta')+'</button></div>';
+  document.getElementById("next").focus();
+}
+function next(){S.i++; if(S.i>=Q.length) result(); else show();}
+function result(){
+  var msg, big;
+  if(S.mode==="solo"){
+    var p=S.ok[0]; big=S.sc[0]+" puntos";
+    msg=p+" de "+Q.length+" respuestas correctas. "+(p>=9?"¡Dominas el ETL en la nube!":p>=6?"¡Muy bien, vas por buen camino!":"Repasa las fases y las herramientas, y vuelve a intentarlo.");
+  }else{
+    var a=S.sc[0],b=S.sc[1];
+    big=a===b?"¡Empate!":(a>b?S.names[0]:S.names[1])+" gana";
+    msg=S.names[0]+": "+a+" puntos ("+S.ok[0]+" correctas). "+S.names[1]+": "+b+" puntos ("+S.ok[1]+" correctas).";
+  }
+  app.innerHTML='<section class="card pop center"><h2>Resultado final</h2><div class="big">'+big+'</div><p>'+msg+'</p><div class="row" style="justify-content:center"><button class="btn" id="again">Jugar de nuevo</button><button class="btn ghost" id="menu">Cambiar de modo</button></div></section>';
+}
+app.addEventListener("click",function(e){
+  var t=e.target.closest("button"); if(!t)return;
+  if(t.dataset.mode){mode=t.dataset.mode; home(); return;}
+  if(t.id==="go") start();
+  else if(t.classList.contains("opt")) answer(+t.dataset.k);
+  else if(t.id==="next") next();
+  else if(t.id==="again"){S.i=0;S.sc=[0,0];S.ok=[0,0];S.order=shuffle(Q.map(function(_,i){return i}));show();}
+  else if(t.id==="menu") home();
+});
+home();
+</script>
+</body>
+</html>
